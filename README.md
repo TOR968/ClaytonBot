@@ -6,6 +6,8 @@
 | ✅ | Performs daily tasks         |
 | ✅ | Daily check                 |
 | ✅ | Collecting coins            |
+| ✅ | Multiple accounts            |
+| ✅ | Proxy            |
 
 ## Prerequisites
 
@@ -36,20 +38,14 @@
    npm install
    ```
 
-4. Rename the `.env-example` file to `.env`:
-   - On Unix-based systems (Linux, macOS):
-     ```
-     mv .env-example .env
-     ```
-   - On Windows:
-     ```
-     ren .env-example .env
-     ```
+4. Open the `data.txt` file in a text editor and replace `INIT_DATA` with your actual authentication token:
+   ```
+   your_actual_token1_here
+   your_actual_token2_here
+   your_actual_token3_here
+   ```
 
-5. Open the `.env` file in a text editor and replace `INIT_DATA` with your actual authentication token:
-   ```
-   INIT_DATA=your_actual_token_here
-   ```
+5. If you need a proxy, fill in the file `proxy.txt` if not, leave it blank [example](proxy-example.txt).
 
 ## How to Get Your Token
 

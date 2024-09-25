@@ -1,0 +1,5 @@
+http://username:password@host:port
+http://username:password@host2:port2
+
+1 proxy 1 user
+IF YOU DO NOT NEED TO USE A PROXY, JUST DON'T FILL IN THE proxy.txt FILE.
