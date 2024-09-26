@@ -123,20 +123,24 @@ async function processAccount(initData, firstName, proxy) {
             log("Tokens claimed", "magenta");
             await apiFunctions.startFarming(api);
             log("Farming started", "blue");
+
+            loginData = await apiFunctions.login(api);
+            log("Updated user data after claiming tokens", "cyan");
         } else {
             log("Token claim not available", "magenta");
         }
 
         const dailyAttempts = loginData.user.daily_attempts;
         log(`Available game attempts: ${dailyAttempts}`, "cyan");
+
         for (let i = 1; i <= dailyAttempts; i++) {
             const gameResult = await apiFunctions.playGame(api, "1024");
-            log(`1024 game ${i} result:`, "green");
-            console.log(gameResult);
+            log(`1024 game ${i} Done`, "green");
         }
 
         log("Fetching daily tasks...", "cyan");
         let tasks = await apiFunctions.getDailyTasks(api);
+
         for (const task of tasks) {
             if (!task.is_completed && !task.is_reward) {
                 log(`Completing task: ${task.task_type} (ID: ${task.id})`, "yellow");
@@ -148,6 +152,7 @@ async function processAccount(initData, firstName, proxy) {
         }
 
         tasks = await apiFunctions.getDailyTasks(api);
+
         for (const task of tasks) {
             if (task.is_completed && !task.is_reward) {
                 log(`Claiming reward for task: ${task.task_type} (ID: ${task.id})`, "yellow");
