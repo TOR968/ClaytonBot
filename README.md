@@ -4,10 +4,14 @@
 |----|-----------------------------|
 | ✅ | Automates playing a game 1024 |
 | ✅ | Performs daily tasks         |
+| ✅ | Performs partner tasks         |
+| ✅ | Performs bot task         |
 | ✅ | Daily check                 |
 | ✅ | Collecting coins            |
 | ✅ | Multiple accounts            |
 | ✅ | Proxy            |
+
+## !!! Before launching the bot, check if you are subscribed to the official Clayton account
 
 ## Prerequisites
 
