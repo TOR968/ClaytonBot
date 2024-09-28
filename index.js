@@ -80,7 +80,7 @@ async function safeRequest(api, method, url, data, retries = 3) {
             }
 
             if (attempt < retries - 1 && statusCode >= 500) {
-                log(`Retrying request... Attempt ${attempt + 1}`, "yellow");
+                log(`Retrying request... Attempt ${attempt + 1}`, "white");
                 attempt++;
                 await new Promise((resolve) => setTimeout(resolve, 5000));
             } else {
@@ -112,7 +112,7 @@ const apiFunctions = {
 
 async function playGameWithProgress(api, gameName) {
     const tileSequence = [8, 16, 32, 64, 128, 256, 512, 1024];
-    const duration = tileSequence.length;
+    const duration = tileSequence.length + 1;
 
     for (let i = 0; i < tileSequence.length; i++) {
         const currentTile = tileSequence[i];
@@ -188,7 +188,6 @@ async function processAccount(initData, firstName, proxy) {
         for (const task of partnerTasks) {
             const { is_completed, is_rewarded, task_id, task_name } = task;
 
-            log(`Partner task: ${task_name})`, "white");
             if (!is_completed && !is_rewarded) {
                 log(`Completing task: ${task_name} (ID: ${task_id})`, "yellow");
                 const completeResult = await apiFunctions.completePartnerTask(api, task_id);
