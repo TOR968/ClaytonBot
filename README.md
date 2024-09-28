@@ -11,7 +11,7 @@
 | ✅ | Multiple accounts            |
 | ✅ | Proxy            |
 
-## !!! Before launching the bot, check if you are subscribed to the official Clayton account
+## For suggestions or to report a bug, please contact here [telegram](https://t.me/tor_dev)
 
 ## Prerequisites
 
