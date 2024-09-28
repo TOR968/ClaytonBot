@@ -105,28 +105,28 @@ const apiFunctions = {
     completeTask: (api, taskId) => safeRequest(api, "post", `/api/user/daily-task/${taskId}/complete`, {}),
     claimTaskReward: (api, taskId) => safeRequest(api, "post", `/api/user/daily-task/${taskId}/claim`, {}),
     playGame: async (api, gameName) => {
-        await safeRequest(api, "post", "/api/game/start", {});
+        await safeRequest(api, "post", "/api/game/start-game", {});
         await playGameWithProgress(api, gameName);
     },
 };
 
 async function playGameWithProgress(api, gameName) {
     const tileSequence = [8, 16, 32, 64, 128, 256, 512, 1024];
-    const duration = tileSequence.length * 10;
+    const duration = tileSequence.length;
 
     for (let i = 0; i < tileSequence.length; i++) {
         const currentTile = tileSequence[i];
 
-        process.stdout.write(`\r\x1b[36m${gameName} game in progress: ${i * 10}s / ${duration}s`);
+        process.stdout.write(`\r\x1b[36m${gameName} game in progress: ${i} / ${duration} - `);
 
         await new Promise((resolve) => setTimeout(resolve, 10000));
 
-        await safeRequest(api, "post", "/api/game/save-tile", { maxTile: currentTile });
+        await safeRequest(api, "post", "/api/game/save-tile-game", { maxTile: currentTile });
         log(`Tile saved: ${currentTile}`, "cyan");
     }
 
     process.stdout.write(`\r\x1b[36m${gameName} game finished!\x1b[0m\n`);
-    return await safeRequest(api, "post", "/api/game/over", {});
+    return await safeRequest(api, "post", "/api/game/over-game", {});
 }
 
 async function processAccount(initData, firstName, proxy) {
@@ -164,8 +164,8 @@ async function processAccount(initData, firstName, proxy) {
 
         const taskBotStatus = await apiFunctions.getTaskBot(api);
         log(
-            `Bot task status: ${taskBotStatus.bot ? "Not available" :  "Available"}, Claim status: ${
-                taskBotStatus.claim ? "Not available" :  "Available"
+            `Bot task status: ${taskBotStatus.bot ? "Not available" : "Available"}, Claim status: ${
+                taskBotStatus.claim ? "Not available" : "Available"
             }`,
             "cyan"
         );
