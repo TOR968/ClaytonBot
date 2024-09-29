@@ -79,7 +79,16 @@ async function safeRequest(api, method, url, data, retries = 3) {
                 return;
             }
 
-            if (attempt < retries - 1 && statusCode >= 500) {
+            if (statusCode === 500) {
+                log("Tasks are not available at the moment", "yellow");
+                return;
+            }
+
+            if (statusCode === 429) {
+                log("Too many requests... Waiting before retry", "white");
+                await new Promise((resolve) => setTimeout(resolve, 60000));
+                attempt++;
+            } else if (attempt < retries - 1 && statusCode >= 500) {
                 log(`Retrying request... Attempt ${attempt + 1}`, "white");
                 attempt++;
                 await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -149,7 +158,6 @@ async function processAccount(initData, firstName, proxy) {
             log("Farming started", "blue");
 
             loginData = await apiFunctions.login(api);
-            log("Updated user data after claiming tokens", "cyan");
         } else {
             log("Token claim not available", "magenta");
         }
@@ -163,81 +171,95 @@ async function processAccount(initData, firstName, proxy) {
         }
 
         const taskBotStatus = await apiFunctions.getTaskBot(api);
-        log(
-            `Bot task status: ${taskBotStatus.bot ? "Not available" : "Available"}, Claim status: ${
-                taskBotStatus.claim ? "Not available" : "Available"
-            }`,
-            "cyan"
-        );
 
-        if (taskBotStatus.bot && !taskBotStatus.claim) {
-            log("Claiming task bot reward...", "yellow");
+        if (taskBotStatus && taskBotStatus.bot !== undefined && taskBotStatus.claim !== undefined) {
+            log(
+                `Bot task status: ${taskBotStatus.bot ? "Not available" : "Available"}, Claim status: ${
+                    taskBotStatus.claim ? "Not available" : "Available"
+                }`,
+                "cyan"
+            );
 
-            const rewardResponse = await apiFunctions.claimTaskBotReward(api);
+            if (taskBotStatus.bot && !taskBotStatus.claim) {
+                log("Claiming task bot reward...", "yellow");
 
-            log(`Bot task reward claimed: ${rewardResponse.claimed}`, "green");
-        } else if (!taskBotStatus.bot) {
-            log("Bot task not available", "red");
-        } else if (taskBotStatus.claim) {
-            log("Bot task reward already claimed", "blue");
+                const rewardResponse = await apiFunctions.claimTaskBotReward(api);
+
+                log(`Bot task reward claimed: ${rewardResponse.claimed}`, "green");
+            } else if (!taskBotStatus.bot) {
+                log("Bot task not available", "red");
+            } else if (taskBotStatus.claim) {
+                log("Bot task reward already claimed", "blue");
+            }
+        } else {
+            log("Invalid task bot status response", "yellow");
         }
 
         log("Fetching partners tasks...", "cyan");
         let partnerTasks = await apiFunctions.getPartnerTasks(api);
 
-        for (const task of partnerTasks) {
-            const { is_completed, is_rewarded, task_id, task_name } = task;
+        if (Array.isArray(partnerTasks)) {
+            for (const task of partnerTasks) {
+                const { is_completed, is_rewarded, task_id, task_name } = task;
 
-            if (!is_completed && !is_rewarded) {
-                log(`Completing task: ${task_name} (ID: ${task_id})`, "yellow");
-                const completeResult = await apiFunctions.completePartnerTask(api, task_id);
-                log(completeResult.message, "green");
-            } else {
-                log(`Task already completed: ${task_name} (ID: ${task_id})`, "yellow");
+                if (!is_completed && !is_rewarded) {
+                    log(`Completing task: ${task_name} (ID: ${task_id})`, "yellow");
+                    const completeResult = await apiFunctions.completePartnerTask(api, task_id);
+                    log(completeResult.message, "green");
+                } else {
+                    log(`Task already completed: ${task_name} (ID: ${task_id})`, "yellow");
+                }
             }
-        }
 
-        partnerTasks = await apiFunctions.getPartnerTasks(api);
+            partnerTasks = await apiFunctions.getPartnerTasks(api);
 
-        for (const task of partnerTasks) {
-            const { is_completed, is_rewarded, task_id, task_name } = task;
+            for (const task of partnerTasks) {
+                const { is_completed, is_rewarded, task_id, task_name } = task;
 
-            if (is_completed && !is_rewarded) {
-                log(`Claiming reward for task: ${task_name} (ID: ${task_id})`, "yellow");
-                const claimResult = await apiFunctions.claimPartnerTaskReward(api, task_id);
-                log(claimResult.message, "green");
+                if (is_completed && !is_rewarded) {
+                    log(`Claiming reward for task: ${task_name} (ID: ${task_id})`, "yellow");
+                    const claimResult = await apiFunctions.claimPartnerTaskReward(api, task_id);
+                    log(claimResult.message, "green");
+                }
             }
-        }
 
-        log("All partner tasks completed", "green");
+            log("All partner tasks completed", "green");
+        } else {
+            log("Not available partner tasks", "yellow");
+        }
 
         log("Fetching daily tasks...", "cyan");
+
         let tasks = await apiFunctions.getDailyTasks(api);
 
-        for (const task of tasks) {
-            if (!task.is_completed && !task.is_reward) {
-                log(`Completing task: ${task.task_type} (ID: ${task.id})`, "yellow");
-                const completeResult = await apiFunctions.completeTask(api, task.id);
-                log(completeResult.message, "green");
-            } else {
-                log(`Task already completed: ${task.task_type} (ID: ${task.id})`, "yellow");
+        if (Array.isArray(tasks)) {
+            for (const task of tasks) {
+                if (!task.is_completed && !task.is_reward) {
+                    log(`Completing task: ${task.task_type} (ID: ${task.id})`, "yellow");
+                    const completeResult = await apiFunctions.completeTask(api, task.id);
+                    log(completeResult.message, "green");
+                } else {
+                    log(`Task already completed: ${task.task_type} (ID: ${task.id})`, "yellow");
+                }
             }
+
+            tasks = await apiFunctions.getDailyTasks(api);
+
+            for (const task of tasks) {
+                if (task.is_completed && !task.is_reward) {
+                    log(`Claiming reward for task: ${task.task_type} (ID: ${task.id})`, "yellow");
+                    const claimResult = await apiFunctions.claimTaskReward(api, task.id);
+                    log(claimResult.message, "green");
+                    console.log(`Reward received: ${claimResult.reward}`);
+                }
+            }
+        } else {
+            log("Not available daily tasks", "yellow");
         }
 
-        tasks = await apiFunctions.getDailyTasks(api);
-
-        for (const task of tasks) {
-            if (task.is_completed && !task.is_reward) {
-                log(`Claiming reward for task: ${task.task_type} (ID: ${task.id})`, "yellow");
-                const claimResult = await apiFunctions.claimTaskReward(api, task.id);
-                log(claimResult.message, "green");
-                console.log(`Reward received: ${claimResult.reward}`);
-            }
-        }
-
-        log("All tasks completed", "green");
+        log(`Account ${firstName} processed successfully`, "green");
     } catch (error) {
-        log(`Error occurred for ${firstName}: ${error.message}`, "red");
+        log(`Error processing account ${firstName}: ${error.message}`, "red");
     }
 }
 
@@ -256,6 +278,8 @@ async function main() {
 
         log(`Processing account: ${firstName} ${proxy ? `using proxy ${proxy}` : ""}`, "cyan");
         await processAccount(initData, firstName, proxy);
+
+        await new Promise((resolve) => setTimeout(resolve, 20000));
     }
 }
 
