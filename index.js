@@ -112,12 +112,12 @@ const apiFunctions = {
 
 async function playGameWithProgress(api, gameName) {
     const tileSequence = [8, 16, 32, 64, 128, 256, 512, 1024];
-    const duration = tileSequence.length + 1;
+    const duration = tileSequence.length;
 
     for (let i = 0; i < tileSequence.length; i++) {
         const currentTile = tileSequence[i];
 
-        process.stdout.write(`\r\x1b[36m${gameName} game in progress: ${i} / ${duration} - `);
+        process.stdout.write(`\r\x1b[36m${gameName} game in progress: ${i + 1} / ${duration} - `);
 
         await new Promise((resolve) => setTimeout(resolve, 10000));
 
