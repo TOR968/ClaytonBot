@@ -5,20 +5,15 @@ const querystring = require("querystring");
 
 const BASE_URL = "https://tonclayton.fun";
 
-async function readFromFile(filePath) {
+async function readFileLines(filePath) {
     const fileStream = fs.createReadStream(filePath);
-    const rl = readline.createInterface({
-        input: fileStream,
-        crlfDelay: Infinity,
-    });
+    const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
-    const items = [];
+    const lines = [];
     for await (const line of rl) {
-        if (line.trim()) {
-            items.push(line.trim());
-        }
+        if (line.trim()) lines.push(line.trim());
     }
-    return items;
+    return lines;
 }
 
 function createApiClient(initData, proxy) {
@@ -38,15 +33,7 @@ function createApiClient(initData, proxy) {
         const [username, password] = auth.split(":");
         const [host, port] = hostPort.split(":");
 
-        axiosConfig.proxy = {
-            protocol,
-            host,
-            port,
-            auth: {
-                username,
-                password,
-            },
-        };
+        axiosConfig.proxy = { protocol, host, port, auth: { username, password } };
     }
 
     return axios.create(axiosConfig);
@@ -57,17 +44,14 @@ function log(message, color = "white") {
         red: "\x1b[31m",
         green: "\x1b[32m",
         yellow: "\x1b[33m",
-        blue: "\x1b[34m",
-        magenta: "\x1b[35m",
         cyan: "\x1b[36m",
         white: "\x1b[37m",
     };
     console.log(colors[color] + message + "\x1b[0m");
 }
 
-async function safeRequest(api, method, url, data, retries = 3) {
-    let attempt = 0;
-    while (attempt < retries) {
+async function safeRequest(api, method, url, data = {}, retries = 3) {
+    for (let attempt = 0; attempt < retries; attempt++) {
         try {
             const response = await api[method](url, data);
             return response.data;
@@ -75,7 +59,7 @@ async function safeRequest(api, method, url, data, retries = 3) {
             const statusCode = error.response?.status;
 
             if (statusCode === 409) {
-                log(`Conflict error (409) detected: ${error.response.data.message}`, "yellow");
+                log(`Conflict error (409): ${error.response.data.message}`, "yellow");
                 return;
             }
 
@@ -85,13 +69,14 @@ async function safeRequest(api, method, url, data, retries = 3) {
             }
 
             if (statusCode === 429) {
-                log("Too many requests... Waiting before retry", "white");
-                await new Promise((resolve) => setTimeout(resolve, 60000));
-                attempt++;
-            } else if (attempt < retries - 1 && statusCode >= 500) {
+                log("Too many requests, retrying...", "white");
+                await wait(60000);
+                continue;
+            }
+
+            if (attempt < retries - 1 && statusCode >= 500) {
                 log(`Retrying request... Attempt ${attempt + 1}`, "white");
-                attempt++;
-                await new Promise((resolve) => setTimeout(resolve, 5000));
+                await wait(5000);
             } else {
                 log(`Request failed: ${error.message}`, "red");
                 throw error;
@@ -101,41 +86,32 @@ async function safeRequest(api, method, url, data, retries = 3) {
 }
 
 const apiFunctions = {
-    login: (api) => safeRequest(api, "post", "/api/user/login", {}),
-    claimDailyReward: (api) => safeRequest(api, "post", "/api/user/daily-claim", {}),
-    claimTokens: (api) => safeRequest(api, "post", "/api/user/claim", {}),
-    startFarming: (api) => safeRequest(api, "post", "/api/user/start", {}),
-    getTaskBot: (api) => safeRequest(api, "post", "/api/user/task-bot", {}),
-    claimTaskBotReward: (api) => safeRequest(api, "post", "/api/user/task-bot-claim", {}),
-    getPartnerTasks: (api) => safeRequest(api, "post", "/api/user/partner/get", {}),
-    completePartnerTask: (api, taskId) => safeRequest(api, "post", `/api/user/partner/complete/${taskId}`, {}),
-    claimPartnerTaskReward: (api, taskId) => safeRequest(api, "post", `/api/user/partner/reward/${taskId}`, {}),
-    getDailyTasks: (api) => safeRequest(api, "post", "/api/user/daily-tasks", {}),
-    completeTask: (api, taskId) => safeRequest(api, "post", `/api/user/daily-task/${taskId}/complete`, {}),
-    claimTaskReward: (api, taskId) => safeRequest(api, "post", `/api/user/daily-task/${taskId}/claim`, {}),
+    login: (api) => safeRequest(api, "post", "/api/user/auth"),
+    claimDailyReward: (api) => safeRequest(api, "post", "/api/user/daily-claim"),
+    getPartnerTasks: (api) => safeRequest(api, "get", "/api/tasks/partner-tasks"),
+    getDailyTasks: (api) => safeRequest(api, "get", "/api/tasks/daily-tasks"),
+    getOtherTasks: (api) => safeRequest(api, "get", "/api/tasks/default-tasks", {}),
+    completeTask: (api, taskId) => safeRequest(api, "post", `/api/tasks/complete`, { task_id: taskId }),
+    claimTaskReward: (api, taskId) => safeRequest(api, "post", `/api/tasks/claim`, { task_id: taskId }),
     playGame: async (api, gameName) => {
-        await safeRequest(api, "post", "/api/game/start-game", {});
+        await safeRequest(api, "post", "/api/game/start");
         await playGameWithProgress(api, gameName);
     },
 };
 
 async function playGameWithProgress(api, gameName) {
-    const tileSequence = [8, 16, 32, 64, 128, 256, 512, 1024];
-    const duration = tileSequence.length;
+    const tileSequence = [2, 4, 8, 16, 32, 64, 128, 256];
 
     for (let i = 0; i < tileSequence.length; i++) {
-        const currentTile = tileSequence[i];
+        process.stdout.write(`\r\x1b[36m${gameName} game progress: ${i + 1}/${tileSequence.length} `);
 
-        process.stdout.write(`\r\x1b[36m${gameName} game in progress: ${i + 1} / ${duration} - `);
-
-        await new Promise((resolve) => setTimeout(resolve, 10000));
-
-        await safeRequest(api, "post", "/api/game/save-tile-game", { maxTile: currentTile });
-        log(`Tile saved: ${currentTile}`, "cyan");
+        await wait(10000);
+        await safeRequest(api, "post", "/api/game/save-tile", { maxTile: tileSequence[i] });
+        log(`Tile saved: ${tileSequence[i]}`, "cyan");
     }
 
     process.stdout.write(`\r\x1b[36m${gameName} game finished!\x1b[0m\n`);
-    return await safeRequest(api, "post", "/api/game/over-game", {});
+    return await safeRequest(api, "post", "/api/game/over", { multiplier: 1 });
 }
 
 async function processAccount(initData, firstName, proxy) {
@@ -151,17 +127,6 @@ async function processAccount(initData, firstName, proxy) {
             log("Daily reward not available", "yellow");
         }
 
-        if (loginData.user.can_claim) {
-            await apiFunctions.claimTokens(api);
-            log("Tokens claimed", "magenta");
-            await apiFunctions.startFarming(api);
-            log("Farming started", "blue");
-
-            loginData = await apiFunctions.login(api);
-        } else {
-            log("Token claim not available", "magenta");
-        }
-
         const dailyAttempts = loginData.user.daily_attempts;
         log(`Available game attempts: ${dailyAttempts}`, "cyan");
 
@@ -170,92 +135,9 @@ async function processAccount(initData, firstName, proxy) {
             log(`1024 game ${i} Done`, "green");
         }
 
-        const taskBotStatus = await apiFunctions.getTaskBot(api);
-
-        if (taskBotStatus && taskBotStatus.bot !== undefined && taskBotStatus.claim !== undefined) {
-            log(
-                `Bot task status: ${taskBotStatus.bot ? "Not available" : "Available"}, Claim status: ${
-                    taskBotStatus.claim ? "Not available" : "Available"
-                }`,
-                "cyan"
-            );
-
-            if (taskBotStatus.bot && !taskBotStatus.claim) {
-                log("Claiming task bot reward...", "yellow");
-
-                const rewardResponse = await apiFunctions.claimTaskBotReward(api);
-
-                log(`Bot task reward claimed: ${rewardResponse.claimed}`, "green");
-            } else if (!taskBotStatus.bot) {
-                log("Bot task not available", "red");
-            } else if (taskBotStatus.claim) {
-                log("Bot task reward already claimed", "blue");
-            }
-        } else {
-            log("Invalid task bot status response", "yellow");
-        }
-
-        log("Fetching partners tasks...", "cyan");
-        let partnerTasks = await apiFunctions.getPartnerTasks(api);
-
-        if (Array.isArray(partnerTasks)) {
-            for (const task of partnerTasks) {
-                const { is_completed, is_rewarded, task_id, task_name } = task;
-
-                if (!is_completed && !is_rewarded) {
-                    log(`Completing task: ${task_name} (ID: ${task_id})`, "yellow");
-                    const completeResult = await apiFunctions.completePartnerTask(api, task_id);
-                    log(completeResult.message, "green");
-                } else {
-                    log(`Task already completed: ${task_name} (ID: ${task_id})`, "yellow");
-                }
-            }
-
-            partnerTasks = await apiFunctions.getPartnerTasks(api);
-
-            for (const task of partnerTasks) {
-                const { is_completed, is_rewarded, task_id, task_name } = task;
-
-                if (is_completed && !is_rewarded) {
-                    log(`Claiming reward for task: ${task_name} (ID: ${task_id})`, "yellow");
-                    const claimResult = await apiFunctions.claimPartnerTaskReward(api, task_id);
-                    log(claimResult.message, "green");
-                }
-            }
-
-            log("All partner tasks completed", "green");
-        } else {
-            log("Not available partner tasks", "yellow");
-        }
-
-        log("Fetching daily tasks...", "cyan");
-
-        let tasks = await apiFunctions.getDailyTasks(api);
-
-        if (Array.isArray(tasks)) {
-            for (const task of tasks) {
-                if (!task.is_completed && !task.is_reward) {
-                    log(`Completing task: ${task.task_type} (ID: ${task.id})`, "yellow");
-                    const completeResult = await apiFunctions.completeTask(api, task.id);
-                    log(completeResult.message, "green");
-                } else {
-                    log(`Task already completed: ${task.task_type} (ID: ${task.id})`, "yellow");
-                }
-            }
-
-            tasks = await apiFunctions.getDailyTasks(api);
-
-            for (const task of tasks) {
-                if (task.is_completed && !task.is_reward) {
-                    log(`Claiming reward for task: ${task.task_type} (ID: ${task.id})`, "yellow");
-                    const claimResult = await apiFunctions.claimTaskReward(api, task.id);
-                    log(claimResult.message, "green");
-                    console.log(`Reward received: ${claimResult.reward}`);
-                }
-            }
-        } else {
-            log("Not available daily tasks", "yellow");
-        }
+        await processTasks(api, apiFunctions.getPartnerTasks, "partner");
+        await processTasks(api, apiFunctions.getDailyTasks, "daily");
+        await processTasks(api, apiFunctions.getOtherTasks, "other");
 
         log(`Account ${firstName} processed successfully`, "green");
     } catch (error) {
@@ -263,23 +145,59 @@ async function processAccount(initData, firstName, proxy) {
     }
 }
 
+async function processTasks(api, taskGetter, taskType) {
+    log(`Fetching ${taskType} tasks...`, "cyan");
+
+    let tasks = await taskGetter(api);
+
+    if (Array.isArray(tasks)) {
+        for (const task of tasks) {
+            const { is_completed, is_claimed, task_id, task: taskDetails } = task;
+
+            if (task_id === 2) {
+                continue;
+            }
+
+            if (!is_completed && !is_claimed) {
+                log(`Completing ${taskType} task: ${taskDetails.title} (ID: ${task_id})`, "yellow");
+                const completeResult = await apiFunctions.completeTask(api, task_id);
+                log(completeResult.message, "green");
+            } else {
+                log(`${taskType} task already completed: ${taskDetails.title} (ID: ${task_id})`, "yellow");
+            }
+        }
+
+        tasks = await taskGetter(api);
+
+        for (const task of tasks) {
+            const { is_completed, is_claimed, task_id, task: taskDetails } = task;
+
+            if (is_completed && !is_claimed) {
+                log(`Claiming reward for ${taskType} task: ${taskDetails.title} (ID: ${task_id})`, "yellow");
+                const claimResult = await apiFunctions.claimTaskReward(api, task_id);
+                log(claimResult.message, "green");
+                console.log(`Reward received: ${claimResult.reward_tokens}`);
+            }
+        }
+    } else {
+        log(`Not available ${taskType} tasks`, "yellow");
+    }
+}
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function main() {
-    const tokens = await readFromFile("data.txt");
-    const proxies = await readFromFile("proxy.txt");
+    const tokens = await readFileLines("data.txt");
+    const proxies = await readFileLines("proxy.txt");
 
     for (let i = 0; i < tokens.length; i++) {
         const initData = tokens[i];
         const proxy = proxies[i] || null;
-
-        const parsed = querystring.parse(initData);
-        const userDecoded = decodeURIComponent(parsed.user);
-        const userObject = JSON.parse(userDecoded);
-        const firstName = userObject?.first_name;
+        const firstName = JSON.parse(decodeURIComponent(querystring.parse(initData).user))?.first_name;
 
         log(`Processing account: ${firstName} ${proxy ? `using proxy ${proxy}` : ""}`, "cyan");
         await processAccount(initData, firstName, proxy);
-
-        await new Promise((resolve) => setTimeout(resolve, 20000));
+        await wait(20000);
     }
 }
 

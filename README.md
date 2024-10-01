@@ -5,9 +5,8 @@
 | ✅ | Automates playing a game 1024 |
 | ✅ | Performs daily tasks         |
 | ✅ | Performs partner tasks         |
-| ✅ | Performs bot task         |
+| ✅ | Performs other task         |
 | ✅ | Daily check                 |
-| ✅ | Collecting coins            |
 | ✅ | Multiple accounts            |
 | ✅ | Proxy            |
 
