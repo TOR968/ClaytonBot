@@ -12,13 +12,6 @@
 
 ## For suggestions or to report a bug, please contact here [telegram](https://t.me/tor_dev)
 
-## Prerequisites
-
-- Node.js installed on your system
-- npm (Node Package Manager)
-- An account on the Master Protocol platform
-- Git installed on your system (for cloning the repository)
-
 ## Installation
 
 1. Clone the repository:
