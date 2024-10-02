@@ -127,6 +127,10 @@ async function processAccount(initData, firstName, proxy) {
             log("Daily reward not available", "yellow");
         }
 
+        await processTasks(api, apiFunctions.getPartnerTasks, "partner");
+        await processTasks(api, apiFunctions.getDailyTasks, "daily");
+        await processTasks(api, apiFunctions.getOtherTasks, "other");
+
         const dailyAttempts = loginData.user.daily_attempts;
         log(`Available game attempts: ${dailyAttempts}`, "cyan");
 
@@ -134,10 +138,6 @@ async function processAccount(initData, firstName, proxy) {
             await apiFunctions.playGame(api, "1024");
             log(`1024 game ${i} Done`, "green");
         }
-
-        await processTasks(api, apiFunctions.getPartnerTasks, "partner");
-        await processTasks(api, apiFunctions.getDailyTasks, "daily");
-        await processTasks(api, apiFunctions.getOtherTasks, "other");
 
         log(`Account ${firstName} processed successfully`, "green");
     } catch (error) {
