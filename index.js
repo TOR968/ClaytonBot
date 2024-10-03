@@ -131,6 +131,8 @@ async function processAccount(initData, firstName, proxy) {
         await processTasks(api, apiFunctions.getDailyTasks, "daily");
         await processTasks(api, apiFunctions.getOtherTasks, "other");
 
+        loginData = await apiFunctions.login(api);
+
         const dailyAttempts = loginData.user.daily_attempts;
         log(`Available game attempts: ${dailyAttempts}`, "cyan");
 
