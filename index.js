@@ -50,7 +50,7 @@ function log(message, color = "white") {
     console.log(colors[color] + message + "\x1b[0m");
 }
 
-async function safeRequest(api, method, url, data = {}, retries = 3) {
+async function safeRequest(api, method, url, data = {}, retries = 5) {
     for (let attempt = 0; attempt < retries; attempt++) {
         try {
             const response = await api[method](url, data);
@@ -58,29 +58,31 @@ async function safeRequest(api, method, url, data = {}, retries = 3) {
         } catch (error) {
             const statusCode = error.response?.status;
 
-            if (statusCode === 409) {
-                log(`Conflict error (409): ${error.response.data.message}`, "yellow");
-                return;
-            }
+            // if need error handling
+            // if (statusCode === 409) {
+            //     log(`Conflict error (409): ${error.response.data.message}`, "yellow");
+            //     continue;
+            // }
 
-            if (statusCode === 500) {
-                log("Tasks are not available at the moment", "yellow");
-                return;
-            }
+            // if (statusCode === 500) {
+            //     log("Tasks are not available at the moment", "yellow");
+            //     continue;
+            // }
 
-            if (statusCode === 429) {
-                log("Too many requests, retrying...", "white");
-                await wait(60000);
-                continue;
-            }
+            // if (statusCode === 429) {
+            //     log("Too many requests, retrying...", "white");
+            //     await wait(60000);
+            //     continue;
+            // }
 
             if (attempt < retries - 1 && statusCode >= 500) {
                 log(`Retrying request... Attempt ${attempt + 1}`, "white");
                 await wait(5000);
-            } else {
-                log(`Request failed: ${error.message}`, "red");
-                throw error;
-            }
+            } 
+            // else {
+            //     log(`Request failed: ${error.message}`, "red");
+            //     throw error;
+            // }
         }
     }
 }
