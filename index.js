@@ -78,7 +78,7 @@ async function safeRequest(api, method, url, data = {}, retries = 5) {
             if (attempt < retries - 1 && statusCode >= 500) {
                 log(`Retrying request... Attempt ${attempt + 1}`, "white");
                 await wait(5000);
-            } 
+            }
             // else {
             //     log(`Request failed: ${error.message}`, "red");
             //     throw error;
@@ -88,7 +88,7 @@ async function safeRequest(api, method, url, data = {}, retries = 5) {
 }
 
 const apiFunctions = {
-    login: (api) => safeRequest(api, "post", "/api/user/auth"),
+    login: (api) => safeRequest(api, "post", "/api/user/authorization"),
     claimDailyReward: (api) => safeRequest(api, "post", "/api/user/daily-claim"),
     getPartnerTasks: (api) => safeRequest(api, "get", "/api/tasks/partner-tasks"),
     getDailyTasks: (api) => safeRequest(api, "get", "/api/tasks/daily-tasks"),
@@ -107,7 +107,7 @@ async function playGameWithProgress(api, gameName) {
     for (let i = 0; i < tileSequence.length; i++) {
         process.stdout.write(`\r\x1b[36m${gameName} game progress: ${i + 1}/${tileSequence.length} `);
 
-        await wait(10000);
+        await wait(Math.floor(Math.random() * 2000) + 5000);
         await safeRequest(api, "post", "/api/game/save-tile", { maxTile: tileSequence[i] });
         log(`Tile saved: ${tileSequence[i]}`, "cyan");
     }
