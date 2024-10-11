@@ -107,7 +107,7 @@ async function playGameWithProgress(api, gameName) {
     for (let i = 0; i < tileSequence.length; i++) {
         process.stdout.write(`\r\x1b[36m${gameName} game progress: ${i + 1}/${tileSequence.length} `);
 
-        await wait(Math.floor(Math.random() * 2000) + 5000);
+        await wait(Math.floor(getRandomNumber(3000, 7000)));
         await safeRequest(api, "post", "/api/game/save-tile", { maxTile: tileSequence[i] });
         log(`Tile saved: ${tileSequence[i]}`, "cyan");
     }
@@ -190,6 +190,44 @@ async function processTasks(api, taskGetter, taskType) {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function scheduleNextRun() {
+    const randomDelay = getRandomNumber(600000, 2400000);
+    const totalDelay = 7200000 + randomDelay;
+    const startTime = Date.now();
+    const endTime = startTime + totalDelay;
+
+    const timerInterval = setInterval(() => updateTimer(endTime, timerInterval), 1000);
+
+    setTimeout(() => {
+        clearInterval(timerInterval);
+        main();
+    }, totalDelay);
+}
+
+const getRandomNumber = (min, max) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+function updateTimer(endTime, timerInterval) {
+    const currentTime = Date.now();
+    const remainingTime = endTime - currentTime;
+
+    if (remainingTime <= 0) {
+        clearInterval(timerInterval);
+        return;
+    }
+
+    const { hours, minutes, seconds } = getTimeRemaining(remainingTime);
+    process.stdout.write(`\r--- Restarting in ${hours}h ${minutes}m ${seconds}s ---`);
+}
+
+function getTimeRemaining(timeDifference) {
+    const hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+    return { hours, minutes, seconds };
+}
+
 async function main() {
     const tokens = await readFileLines("data.txt");
     const proxies = await readFileLines("proxy.txt");
@@ -203,6 +241,8 @@ async function main() {
         await processAccount(initData, firstName, proxy);
         await wait(20000);
     }
+
+    scheduleNextRun();
 }
 
 main();
