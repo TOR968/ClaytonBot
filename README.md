@@ -49,12 +49,12 @@ To obtain your authentication token:
 
 1. Log in to the Master Protocol mini-app in telegram web or desktop.
 2. Open your browser's Developer Tools (usually F12 or right-click and select "Inspect").
-3. Go to the "Network" tab in the Developer Tools.
-4. Refresh the page or perform any action on the site.
-5. Look for requests to the API (they should start with `https://tonclayton.fun/`).
-6. Click on one of these requests and find the "Request Headers" section.
-7. Look for a header named **"Init-Data"**. The value of this header is your token.
-8. Copy this token and paste it into your `.env` file.
+3. Go to the "Application" tab in the Developer Tools.
+4. Copy tgWabAppData highlighted in green.
+
+![img](image.jpg)
+
+5. Copy this tgWabAppData and paste it into your `data.txt` file.
 
 **Important**: Keep your token secret and never share it publicly. It provides access to your account.
 
