@@ -88,13 +88,16 @@ async function safeRequest(api, method, url, data = {}, retries = 5) {
 }
 
 const apiFunctions = {
-    login: (api) => safeRequest(api, "post", "/api/user/authorization"),
-    claimDailyReward: (api) => safeRequest(api, "post", "/api/user/daily-claim"),
-    getPartnerTasks: (api) => safeRequest(api, "get", "/api/tasks/partner-tasks"),
-    getDailyTasks: (api) => safeRequest(api, "get", "/api/tasks/daily-tasks"),
-    getOtherTasks: (api) => safeRequest(api, "get", "/api/tasks/default-tasks", {}),
-    completeTask: (api, taskId) => safeRequest(api, "post", `/api/tasks/complete`, { task_id: taskId }),
-    claimTaskReward: (api, taskId) => safeRequest(api, "post", `/api/tasks/claim`, { task_id: taskId }),
+    login: (api) => safeRequest(api, "post", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/user/authorization"),
+    claimDailyReward: (api) => safeRequest(api, "post", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/user/daily-claim"),
+    getPartnerTasks: (api) => safeRequest(api, "get", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/tasks/partner-tasks"),
+    getDailyTasks: (api) => safeRequest(api, "get", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/tasks/daily-tasks"),
+    getOtherTasks: (api) =>
+        safeRequest(api, "get", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/tasks/default-tasks", {}),
+    completeTask: (api, taskId) =>
+        safeRequest(api, "post", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/tasks/complete", { task_id: taskId }),
+    claimTaskReward: (api, taskId) =>
+        safeRequest(api, "post", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/tasks/claim", { task_id: taskId }),
     playGame: async (api, gameName) => {
         await safeRequest(api, "post", "/api/game/start");
         await playGameWithProgress(api, gameName);
