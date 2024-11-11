@@ -56,6 +56,10 @@ To obtain your authentication token:
 
 5. Copy this tgWabAppData and paste it into your `data.txt` file.
 
+![img](urlId.png)
+
+6. Copy this id from url in Network and paste it into your `config.json` file (if you do not see the queries, press the key combination Ctrl + R).
+
 **Important**: Keep your token secret and never share it publicly. It provides access to your account.
 
 ## Usage

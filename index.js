@@ -2,7 +2,11 @@ const axios = require("axios");
 const fs = require("fs");
 const readline = require("readline");
 const querystring = require("querystring");
+const config = require("./config.json");
 
+const urlId = config.urlId;
+const multiplier = config.multiplier;
+const tileSequence = config.tileSequence;
 const BASE_URL = "https://tonclayton.fun";
 
 async function readFileLines(filePath) {
@@ -23,7 +27,6 @@ function createApiClient(initData, proxy) {
             Host: "tonclayton.fun",
             "Init-Data": initData,
             Origin: BASE_URL,
-            Referer: `${BASE_URL}/games/game-512`,
         },
     };
 
@@ -88,35 +91,30 @@ async function safeRequest(api, method, url, data = {}, retries = 5) {
 }
 
 const apiFunctions = {
-    login: (api) => safeRequest(api, "post", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/user/authorization"),
-    claimDailyReward: (api) => safeRequest(api, "post", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/user/daily-claim"),
-    getPartnerTasks: (api) => safeRequest(api, "get", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/tasks/partner-tasks"),
-    getDailyTasks: (api) => safeRequest(api, "get", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/tasks/daily-tasks"),
-    getOtherTasks: (api) =>
-        safeRequest(api, "get", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/tasks/default-tasks", {}),
-    completeTask: (api, taskId) =>
-        safeRequest(api, "post", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/tasks/complete", { task_id: taskId }),
-    claimTaskReward: (api, taskId) =>
-        safeRequest(api, "post", "/api/cc82f330-6a6d-4deb-a15b-6a335a67ffa7/tasks/claim", { task_id: taskId }),
+    login: (api) => safeRequest(api, "post", `/api/${urlId}/user/authorization`),
+    claimDailyReward: (api) => safeRequest(api, "post", `/api/${urlId}/user/daily-claim`),
+    getPartnerTasks: (api) => safeRequest(api, "get", `/api/${urlId}/tasks/partner-tasks`),
+    getDailyTasks: (api) => safeRequest(api, "get", `/api/${urlId}/tasks/daily-tasks`),
+    getOtherTasks: (api) => safeRequest(api, "get", `/api/${urlId}/tasks/default-tasks`, {}),
+    completeTask: (api, taskId) => safeRequest(api, "post", `/api/${urlId}/tasks/complete`, { task_id: taskId }),
+    claimTaskReward: (api, taskId) => safeRequest(api, "post", `/api/${urlId}/tasks/claim`, { task_id: taskId }),
     playGame: async (api, gameName) => {
-        await safeRequest(api, "post", "/api/game/start");
+        await safeRequest(api, "post", `/api/${urlId}/game/start`);
         await playGameWithProgress(api, gameName);
     },
 };
 
 async function playGameWithProgress(api, gameName) {
-    const tileSequence = [2, 4, 8, 16, 32, 64, 128, 256];
-
     for (let i = 0; i < tileSequence.length; i++) {
         process.stdout.write(`\r\x1b[36m${gameName} game progress: ${i + 1}/${tileSequence.length} `);
 
         await wait(Math.floor(getRandomNumber(3000, 7000)));
-        await safeRequest(api, "post", "/api/game/save-tile", { maxTile: tileSequence[i] });
+        await safeRequest(api, "post", `/api/${urlId}/game/save-tile`, { maxTile: tileSequence[i] });
         log(`Tile saved: ${tileSequence[i]}`, "cyan");
     }
 
     process.stdout.write(`\r\x1b[36m${gameName} game finished!\x1b[0m\n`);
-    return await safeRequest(api, "post", "/api/game/over", { multiplier: 1 });
+    return await safeRequest(api, "post", `/api/${urlId}/game/over`, { multiplier: multiplier });
 }
 
 async function processAccount(initData, firstName, proxy) {
