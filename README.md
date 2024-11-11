@@ -58,7 +58,7 @@ To obtain your authentication token:
 
 ![img](urlId.png)
 
-6. Copy this id from url in Network and paste it into your `config.json` file (if you do not see the queries, press the key combination Ctrl + R).
+6. Copy this id from url in Network and paste it into your `config.json` file (if you do not see the queries, press the key combination Ctrl + R). UPDATE DAILY!!!
 
 7. Setup config 
 ```
