@@ -60,6 +60,15 @@ To obtain your authentication token:
 
 6. Copy this id from url in Network and paste it into your `config.json` file (if you do not see the queries, press the key combination Ctrl + R).
 
+7. Setup config 
+```
+{
+    "urlId" : "cc8errew-6erd-4dwb-arer6b-6a33rewrw7", // id from item 6
+    "multiplier" : 3, // multiplier after the game maximum value is 3 (use 1-2 for 3 can get you banned)
+    "tileSequence" : [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024] // maximum value 1024
+}
+```
+
 **Important**: Keep your token secret and never share it publicly. It provides access to your account.
 
 ## Usage
