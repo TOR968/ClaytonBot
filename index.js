@@ -61,23 +61,6 @@ async function safeRequest(api, method, url, data = {}, retries = 5) {
         } catch (error) {
             const statusCode = error.response?.status;
 
-            // if need error handling
-            // if (statusCode === 409) {
-            //     log(`Conflict error (409): ${error.response.data.message}`, "yellow");
-            //     continue;
-            // }
-
-            // if (statusCode === 500) {
-            //     log("Tasks are not available at the moment", "yellow");
-            //     continue;
-            // }
-
-            // if (statusCode === 429) {
-            //     log("Too many requests, retrying...", "white");
-            //     await wait(60000);
-            //     continue;
-            // }
-
             if (attempt < retries - 1 && statusCode >= 500) {
                 log(`Retrying request... Attempt ${attempt + 1}`, "white");
                 await wait(5000);
@@ -99,22 +82,37 @@ const apiFunctions = {
     completeTask: (api, taskId) => safeRequest(api, "post", `/api/${urlId}/tasks/complete`, { task_id: taskId }),
     claimTaskReward: (api, taskId) => safeRequest(api, "post", `/api/${urlId}/tasks/claim`, { task_id: taskId }),
     playGame: async (api, gameName) => {
-        await safeRequest(api, "post", `/api/${urlId}/game/start`);
-        await playGameWithProgress(api, gameName);
+        const gameData = await safeRequest(api, "post", `/api/${urlId}/game/start`);
+        await playGameWithProgress(api, gameName, gameData.session_id);
     },
 };
 
-async function playGameWithProgress(api, gameName) {
+async function playGameWithProgress(api, gameName, sessionId) {
+    let tileValue = 4;
     for (let i = 0; i < tileSequence.length; i++) {
         process.stdout.write(`\r\x1b[36m${gameName} game progress: ${i + 1}/${tileSequence.length} `);
 
         await wait(Math.floor(getRandomNumber(3000, 7000)));
-        await safeRequest(api, "post", `/api/${urlId}/game/save-tile`, { maxTile: tileSequence[i] });
+        await safeRequest(api, "post", `/api/${urlId}/game/save-tile`, {
+            session_id: sessionId,
+            maxTile: tileSequence[i],
+        });
+
+        tileValue = tileSequence[i];
         log(`Tile saved: ${tileSequence[i]}`, "cyan");
     }
 
     process.stdout.write(`\r\x1b[36m${gameName} game finished!\x1b[0m\n`);
-    return await safeRequest(api, "post", `/api/${urlId}/game/over`, { multiplier: multiplier });
+    const overGameData = await safeRequest(api, "post", `/api/${urlId}/game/over`, {
+        session_id: sessionId,
+        multiplier: multiplier,
+        maxTile: tileValue,
+    });
+
+    log(
+        `Token reward: ${overGameData?.earn} | Xp reward: ${overGameData?.xp_earned} | Level: ${overGameData?.level}`,
+        "cyan"
+    );
 }
 
 async function processAccount(initData, firstName, proxy) {
