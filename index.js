@@ -5,6 +5,8 @@ const querystring = require("querystring");
 const config = require("./config.json");
 const { HttpsProxyAgent } = require("https-proxy-agent");
 const { SocksProxyAgent } = require("socks-proxy-agent");
+const UserAgentManager = require('./userAgentManager');
+const userAgentManager = new UserAgentManager();
 
 const urlId = config.urlId;
 const multiplier = config.multiplier;
@@ -22,7 +24,7 @@ async function readFileLines(filePath) {
     return lines;
 }
 
-function createApiClient(initData, proxy = null) {
+function createApiClient(initData, proxy = null, userAgent = null) {
     const axiosConfig = {
         baseURL: BASE_URL,
         headers: {
@@ -31,6 +33,10 @@ function createApiClient(initData, proxy = null) {
             Origin: BASE_URL,
         },
     };
+
+    if (userAgent) {
+        axiosConfig.headers['User-Agent'] = userAgent;
+    }
 
     if (proxy) {
         if (proxy.startsWith("socks4://") || proxy.startsWith("socks5://")) {
@@ -116,9 +122,9 @@ async function playGameWithProgress(api, gameName, sessionId) {
     );
 }
 
-async function processAccount(initData, firstName, proxy) {
+async function processAccount(initData, firstName, proxy, userAgent) {
     try {
-        const api = createApiClient(initData, proxy);
+        const api = createApiClient(initData, proxy, userAgent);
         let loginData = await apiFunctions.login(api);
         log("Logged in successfully", "green");
 
@@ -236,9 +242,10 @@ async function main() {
         const initData = tokens[i];
         const proxy = proxies[i] || null;
         const firstName = JSON.parse(decodeURIComponent(querystring.parse(initData).user))?.first_name;
+        const userAgent = userAgentManager.getUserAgent(initData);
 
         log(`Processing account: ${firstName} ${proxy ? `using proxy ${proxy}` : ""}`, "cyan");
-        await processAccount(initData, firstName, proxy);
+        await processAccount(initData, firstName, proxy, userAgent);
         await wait(20000);
     }
 
