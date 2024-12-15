@@ -3,6 +3,8 @@ const fs = require("fs");
 const readline = require("readline");
 const querystring = require("querystring");
 const config = require("./config.json");
+const { HttpsProxyAgent } = require("https-proxy-agent");
+const { SocksProxyAgent } = require("socks-proxy-agent");
 
 const urlId = config.urlId;
 const multiplier = config.multiplier;
@@ -20,7 +22,7 @@ async function readFileLines(filePath) {
     return lines;
 }
 
-function createApiClient(initData, proxy) {
+function createApiClient(initData, proxy = null) {
     const axiosConfig = {
         baseURL: BASE_URL,
         headers: {
@@ -31,12 +33,11 @@ function createApiClient(initData, proxy) {
     };
 
     if (proxy) {
-        const [protocol, proxyUrl] = proxy.split("://");
-        const [auth, hostPort] = proxyUrl.split("@");
-        const [username, password] = auth.split(":");
-        const [host, port] = hostPort.split(":");
-
-        axiosConfig.proxy = { protocol, host, port, auth: { username, password } };
+        if (proxy.startsWith("socks4://") || proxy.startsWith("socks5://")) {
+            axiosConfig.httpsAgent = new SocksProxyAgent(proxy);
+        } else {
+            axiosConfig.httpsAgent = new HttpsProxyAgent(proxy);
+        }
     }
 
     return axios.create(axiosConfig);
